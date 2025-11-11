@@ -38,7 +38,7 @@ class SvetSpider(scrapy.Spider):
                 all_texts = card.css('::text').getall()
                 clean_texts = [text.strip() for text in all_texts if text.strip()]
 
-                # Ищем осмысленные длинные тексты (не цены, не кнопки)
+                # Ищем осмысленные длинные тексты (это не цены и не кнопки)
                 meaningful_texts = [
                     text for text in clean_texts
                     if 'руб' not in text.lower()
