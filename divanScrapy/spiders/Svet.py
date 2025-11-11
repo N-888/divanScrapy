@@ -1,11 +1,9 @@
 # Импортируем необходимые библиотеки для работы паука
 import scrapy
-import re  # Для работы с текстом и поиска по шаблонам
-from scrapy.http import Response  # Для типа ответа от сервера
-from typing import Dict, Any, List, Generator  # Для указания типов данных
+import re
 
 
-class SvetSpider(scrapy.Spider):
+class SvetSpider(scrapy.Sider):
     """
     Наш паук для сбора информации об источниках освещения с сайта divan.ru
     Паук - это программа, которая автоматически посещает веб-страницы и собирает с них информацию
@@ -20,34 +18,23 @@ class SvetSpider(scrapy.Spider):
     # Стартовые URL - страницы, с которых паук начнет работу
     start_urls = ["https://www.divan.ru/category/svet"]
 
-    def parse(self, response: Response, **kwargs) -> Generator[Dict[str, Any], None, None]:
+    def parse(self, response, **kwargs):
         """
         Главная функция паука, которая обрабатывает страницу и извлекает данные
         Эта функция вызывается автоматически, когда паук загружает страницу
-
-        Args:
-            response: Ответ от сервера со всей информацией о странице
-            **kwargs: Дополнительные параметры (пока не используем)
-
-        Returns:
-            Generator: Специальный объект, который возвращает данные по одному
         """
 
         # Ищем все карточки товаров на странице по специальному атрибуту data-testid
         # CSS-селектор - это способ указать программе, какие элементы на странице нас интересуют
         product_cards = response.css('div[data-testid="product-card"]')
 
-        # Преобразуем результат в обычный список Python
-        # Это нужно чтобы избежать проблем с типами данных
-        cards_list: List[scrapy.Selector] = list(product_cards)
-
         # Записываем в лог сколько товаров нашли
         # Логгер - это специальный инструмент для записи информации о работе программы
-        self.logger.info(f"Найдено карточек товаров: {len(cards_list)}")
+        self.logger.info(f"Найдено карточек товаров: {len(product_cards)}")
 
         # Проходим по каждой карточке товара в цикле
         # Цикл - это повторение одних и тех же действий для каждого элемента
-        for card in cards_list:
+        for card in product_cards:
             # Извлекаем данные из карточки
             item_data = self.extract_item_data(card)
 
@@ -56,16 +43,10 @@ class SvetSpider(scrapy.Spider):
             if item_data:
                 yield item_data
 
-    def extract_item_data(self, card: scrapy.Selector) -> Dict[str, Any]:
+    def extract_item_data(self, card):
         """
         Извлекает информацию о товаре из одной карточки
         Карточка товара - это блок на странице с информацией об одном товаре
-
-        Args:
-            card: Объект карточки товара, из которого мы извлекаем данные
-
-        Returns:
-            Dict: Словарь с названием, ценой и ссылкой на товар
         """
         # Извлекаем цену товара
         # Ищем элемент с атрибутом data-testid="price" и берем его текст
@@ -106,16 +87,10 @@ class SvetSpider(scrapy.Spider):
 
         return item_dict
 
-    def extract_name_from_url(self, url: str) -> str:
+    def extract_name_from_url(self, url):
         """
         Извлекает название товара из его URL-адреса
         URL часто содержит название товара в закодированном виде
-
-        Args:
-            url: Ссылка на страницу товара
-
-        Returns:
-            str: Название товара в читаемом формате
         """
         try:
             # Ищем в URL часть после "/product/" и до конца или до знака "?"
@@ -139,23 +114,17 @@ class SvetSpider(scrapy.Spider):
         # Возвращаем "Неизвестно" если ничего не нашли или была ошибка
         return "Неизвестно"
 
-    def extract_name_from_card(self, card: scrapy.Selector) -> str:
+    def extract_name_from_card(self, card):
         """
         Извлекает название товара из текста карточки
         Это запасной способ, если не удалось извлечь название из URL
-
-        Args:
-            card: Карточка товара, из которой извлекаем текст
-
-        Returns:
-            str: Найденное название товара или "Неизвестно"
         """
         try:
             # Получаем весь текст из карточки товара
             all_text_elements = card.css('::text')
 
             # Создаем пустой список для хранения текстов
-            all_texts: List[str] = []
+            all_texts = []
 
             # Проходим по всем текстовым элементам и извлекаем текст
             for text_element in all_text_elements:
@@ -172,7 +141,7 @@ class SvetSpider(scrapy.Spider):
             ]
 
             # Создаем список для хранения осмысленных текстов
-            meaningful_texts: List[str] = []
+            meaningful_texts = []
 
             # Фильтруем текст: убираем служебную информацию
             for text in all_texts:
