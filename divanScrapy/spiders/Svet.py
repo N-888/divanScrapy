@@ -3,7 +3,7 @@ import scrapy
 import re
 
 
-class SvetSpider(scrapy.Sider):
+class SvetSpider(scrapy.Spider):
     """
     Наш паук для сбора информации об источниках освещения с сайта divan.ru
     Паук - это программа, которая автоматически посещает веб-страницы и собирает с них информацию
@@ -26,15 +26,19 @@ class SvetSpider(scrapy.Sider):
 
         # Ищем все карточки товаров на странице по специальному атрибуту data-testid
         # CSS-селектор - это способ указать программе, какие элементы на странице нас интересуют
-        product_cards = response.css('div[data-testid="product-card"]')
+        # type: ignore - игнорируем проверку типов для этой строки, так как PyCharm не всегда правильно понимает Scrapy
+        product_cards = response.css('div[data-testid="product-card"]')  # type: ignore
+
+        # Преобразуем результат в обычный список, чтобы избежать проблем с типами данных
+        cards_list = list(product_cards) # type: ignore
 
         # Записываем в лог сколько товаров нашли
         # Логгер - это специальный инструмент для записи информации о работе программы
-        self.logger.info(f"Найдено карточек товаров: {len(product_cards)}")
+        self.logger.info(f"Найдено карточек товаров: {len(cards_list)}")
 
         # Проходим по каждой карточке товара в цикле
         # Цикл - это повторение одних и тех же действий для каждого элемента
-        for card in product_cards:
+        for card in cards_list:
             # Извлекаем данные из карточки
             item_data = self.extract_item_data(card)
 
@@ -49,12 +53,12 @@ class SvetSpider(scrapy.Sider):
         Карточка товара - это блок на странице с информацией об одном товаре
         """
         # Извлекаем цену товара
-        # Ищем элемент с атрибутом data-testid="price" и берем его текст
+        # Надо искать элемент с атрибутом data-testid="price" и берем его текст
         price_element = card.css('[data-testid="price"]::text')
         price = price_element.get() if price_element else None
 
         # Извлекаем ссылку на товар
-        # Ищем тег <a> и берем значение атрибута href (ссылка)
+        # Надо искать тег <а> и берем значение атрибута href (ссылка)
         url_element = card.css('a::attr(href)')
         url = url_element.get() if url_element else None
 
@@ -145,7 +149,7 @@ class SvetSpider(scrapy.Sider):
 
             # Фильтруем текст: убираем служебную информацию
             for text in all_texts:
-                # Пропускаем если текст содержит "руб" (это цена)
+                # Пропускаем если текст содержит "руб." (это цена)
                 if 'руб' in text.lower():
                     continue
 
